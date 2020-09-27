@@ -93,9 +93,9 @@ public class VSMScorer extends AScorer {
             {
                 if(map.get(queryWord) > 0)
                 {
-                    if(type == "body")
+                    if(type.equals("body"))
                         map.put(queryWord, map.get(queryWord) / d.body_length);
-                    else if (type == "title")
+                    else if (type.equals("title"))
                         map.put(queryWord, map.get(queryWord) / d.title_length);
                 }
             }

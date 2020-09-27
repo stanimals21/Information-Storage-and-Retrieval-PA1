@@ -59,7 +59,7 @@ public class BM25Scorer extends AScorer {
      */
     public void calcAverageLengths() {
         lengths = new HashMap<>();
-        avgLengths = new HashMap<>(); 
+        avgLengths = new HashMap<>();
         pagerankScores = new HashMap<>();
 
         /*
@@ -69,25 +69,55 @@ public class BM25Scorer extends AScorer {
          * accumulate lengths of fields.
          * handle pagerank.
          */
-
         // populate lengths
-//        for(Query query : queryDict.keySet())
-//        {
-//            for()
-//            {
-//                queryDict.getClass(query)
-//            }
-//        }
+        for(Query query : queryDict.keySet())
+        {
+            for(String url : queryDict.get(query).keySet())
+            {
+                Document currDoc = queryDict.get(query).get(url);
 
-        for (String tfType : this.TFTYPES) {
-            /*
-             * TODO : Your code here
-             * Normalize lengths to get average lengths for
-             * each field (body, title).
-             */
+                // calculates pageRanks for each document
+                pagerankScores.put(currDoc, Math.log10(currDoc.page_rank));
+
+                // field -> length map
+                HashMap<String, Double> fieldLenMap = new HashMap<>();
+
+                for (String tfType : this.TFTYPES)
+                {
+                    /*
+                     * TODO : Your code here
+                     * Normalize lengths to get average lengths for
+                     * each field (body, title).
+                     */
+
+                    // initialize values in averageLengths
+                    if(!avgLengths.containsKey(tfType))
+                        avgLengths.put(tfType, 0.0);
+
+                    if(tfType.equals("title") && currDoc.title != null) {
+                        // calculates total title length for document
+                        double title_length = currDoc.title_length;
+                        fieldLenMap.put(tfType, title_length);
+                        avgLengths.put(tfType, avgLengths.get(tfType) + title_length);
+                    }
+
+                    else if(tfType.equals("body")) {
+                        double body_length = currDoc.body_length;
+                        fieldLenMap.put(tfType, body_length);
+                        avgLengths.put(tfType, avgLengths.get(tfType) + body_length);
+                    }
+                }
+                lengths.put(currDoc, fieldLenMap);
+            }
+
+            for (String tfType : this.TFTYPES)
+            {
+                // avgLength = (total count for each field) / number of documents
+                avgLengths.put(tfType, avgLengths.get(tfType) / lengths.size());
+            }
         }
-
     }
+
 
     /**
      * Get the net score.

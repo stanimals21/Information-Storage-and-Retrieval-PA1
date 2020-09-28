@@ -19,8 +19,8 @@ public class BM25Scorer extends AScorer {
     /*
      *  TODO: You will want to tune these values
      */
-    double titleweight  = 0.7;
-    double bodyweight = 0.05;
+    double titleweight  = 0.1;
+    double bodyweight = 0.1;
 
     // BM25-specific weights
     double btitle = 0.1;
@@ -90,7 +90,7 @@ public class BM25Scorer extends AScorer {
                      * each field (body, title).
                      */
 
-                    // initialize values in averageLengths
+                    // initialize value in averageLengths if not already populated
                     if(!avgLengths.containsKey(tfType))
                         avgLengths.put(tfType, 0.0);
 
@@ -137,7 +137,35 @@ public class BM25Scorer extends AScorer {
          * of a document d for a query q.
          */
 
+        for(String queryWord : q.queryWords)
+        {
+            double overallWeight = 0;
+            // equation 3: overall weight for term t in document d
+            overallWeight = ((tfs.get("title").get(queryWord) * titleweight) + (tfs.get("body").get(queryWord) * bodyweight));
+
+            // equation 4:
+            double idf = tfQuery.get(queryWord);
+            score += (overallWeight/(k1 + overallWeight)) * idf + pageRankLambda * V_j("1", pageRankLambda, pagerankScores, d);
+        }
+
         return score;
+    }
+
+    // for use in getNetScore
+    public double V_j(String function, double pageRankLambda, Map<Document, Double> pagerankScores, Document d){
+        double value = 0.0;
+        switch(function)
+        {
+            case "1":
+                value = Math.log10(pageRankLambdaPrime + pagerankScores.get(d));
+                break;
+            case "2": // placeholder
+                break;
+            case "3": // placeholder
+                break;
+
+        }
+        return value;
     }
 
     /**
@@ -152,6 +180,30 @@ public class BM25Scorer extends AScorer {
          * Use equation 2 in the writeup to normalize the raw term frequencies
          * in fields in document d.
          */
+
+        for(String type: tfs.keySet())
+        {
+            Map<String, Double> map = new HashMap<>();
+            for(String queryWord : q.queryWords)
+            {
+//                map.put(queryWord, 0.0); // (tfs should already be initialized, don't need this)
+                double rawTF = tfs.get(type).get(queryWord);
+                double lenDF = lengths.get(d).get(type);
+                double avgLenF = avgLengths.get(type);
+
+                if(type.equals("body") && avgLenF != 0)
+                {
+                    double normalizedFreq = rawTF/((1-bbody)+bbody*(lenDF/avgLenF));
+                    map.put(queryWord, normalizedFreq);
+                }
+                else if (type.equals("title") && avgLenF != 0)
+                {
+                    double normalizedFreq = rawTF/((1-btitle)+btitle*(lenDF/avgLenF));
+                    map.put(queryWord, normalizedFreq);
+                }
+            }
+            tfs.put(type, map);
+        }
     }
 
     /**

@@ -21,8 +21,8 @@ public class VSMScorer extends AScorer {
      * TODO: You will want to tune the values for
      * the weights for each field.
      */
-    double titleweight  = 0.3;
-    double bodyweight = 0.05;
+    double titleweight  = 0.1;
+    double bodyweight = 0.1;
 
     /**
      * Construct a Cosine Similarity scorer.

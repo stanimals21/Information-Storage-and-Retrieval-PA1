@@ -76,7 +76,6 @@ public class BM25Scorer extends AScorer {
             {
                 Document currDoc = queryDict.get(query).get(url);
 
-                // calculates pageRanks for each document
                 pagerankScores.put(currDoc, Math.log10(currDoc.page_rank));
 
                 // field -> length map
@@ -95,7 +94,6 @@ public class BM25Scorer extends AScorer {
                         avgLengths.put(tfType, 0.0);
 
                     if(tfType.equals("title") && currDoc.title != null) {
-                        // calculates total title length for document
                         double title_length = currDoc.title_length;
                         fieldLenMap.put(tfType, title_length);
                         avgLengths.put(tfType, avgLengths.get(tfType) + title_length);
@@ -109,12 +107,12 @@ public class BM25Scorer extends AScorer {
                 }
                 lengths.put(currDoc, fieldLenMap);
             }
+        }
 
-            for (String tfType : this.TFTYPES)
-            {
-                // avgLength = (total count for each field) / number of documents
-                avgLengths.put(tfType, avgLengths.get(tfType) / lengths.size());
-            }
+        for (String tfType : this.TFTYPES)
+        {
+            // avgLength = (total count for each field) / number of documents
+            avgLengths.put(tfType, avgLengths.get(tfType) / lengths.size());
         }
     }
 
@@ -139,33 +137,29 @@ public class BM25Scorer extends AScorer {
 
         for(String queryWord : q.queryWords)
         {
-            double overallWeight = 0;
             // equation 3: overall weight for term t in document d
-            overallWeight = ((tfs.get("title").get(queryWord) * titleweight) + (tfs.get("body").get(queryWord) * bodyweight));
+            double overallWeight = ((tfs.get("title").get(queryWord) * titleweight) + (tfs.get("body").get(queryWord) * bodyweight));
 
-            // equation 4:
+            // equation 4: summation for score, function V_j is defined below (use "log", "saturation", or "sigmoid" as parameter).
             double idf = tfQuery.get(queryWord);
-            score += (overallWeight/(k1 + overallWeight)) * idf + pageRankLambda * V_j("1", pageRankLambda, pagerankScores, d);
+            score += (overallWeight/(k1 + overallWeight)) * idf + pageRankLambda * V_j("log", d);
         }
 
         return score;
     }
 
-    // for use in getNetScore
-    public double V_j(String function, double pageRankLambda, Map<Document, Double> pagerankScores, Document d){
-        double value = 0.0;
+    // used in calculations for getNetScore
+    public double V_j(String function, Document d){
+        double pagerankScore = pagerankScores.get(d);
         switch(function)
         {
-            case "1":
-                value = Math.log10(pageRankLambdaPrime + pagerankScores.get(d));
-                break;
-            case "2": // placeholder
-                break;
-            case "3": // placeholder
-                break;
-
+            case "saturation":
+                return pagerankScore/(pageRankLambdaPrime + pagerankScore);
+            case "sigmoid":
+                return 1/(pageRankLambdaPrime + Math.exp(-pagerankScore * pageRankLambdaPrime));
+            default:
+                return Math.log10(pageRankLambdaPrime + pagerankScore);
         }
-        return value;
     }
 
     /**

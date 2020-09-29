@@ -132,12 +132,15 @@ public abstract class AScorer {
                     titleCount++;
                 }
             }
-            titleMap.put(queryWord, titleCount);
+
+            if(titleCount > 0) {
+                titleMap.put(queryWord, 1 + Math.log10(titleCount));
+            }
 
             // calculate for body
             if (d.body_hits != null) {
-                if (d.body_hits.containsKey(queryWord)) {
-                    bodyMap.put(queryWord, (double) d.body_hits.get(queryWord).size());
+                if (d.body_hits.containsKey(queryWord) && d.body_hits.get(queryWord).size() > 0) {
+                    bodyMap.put(queryWord, (double) 1 + Math.log10(d.body_hits.get(queryWord).size()));
                 }
             }
         }
@@ -147,5 +150,4 @@ public abstract class AScorer {
 
     return tfs;
     }
-
 }
